@@ -1,4 +1,4 @@
-"""Command-line interface: ingest, ask, timeline, reviews, demo."""
+"""Command-line interface: local use (SQLite or Postgres), service management, and the demo."""
 from __future__ import annotations
 
 import os
@@ -15,21 +15,30 @@ from .entities import normalize_key
 from .graph import ask as agent_ask
 from .ingest import ingest_text
 from .models import UNKNOWN_START, SourceType
-from .store.sqlite import MemoryStore
 
-app = typer.Typer(help="Enterprise Engineering Memory Agent (PoC)", no_args_is_help=True)
+app = typer.Typer(help="Enterprise Engineering Memory Agent", no_args_is_help=True)
+db_app = typer.Typer(help="Database management", no_args_is_help=True)
+tenant_app = typer.Typer(help="Tenants and API keys", no_args_is_help=True)
+app.add_typer(db_app, name="db")
+app.add_typer(tenant_app, name="tenant")
 console = Console()
 
 
-def _ctx(db: str | None = None, clock=None) -> Context:
-    from .llm.gemini import GeminiEmbedder, GeminiLLM  # deferred so --help works without a key
+def _service(db: str | None = None):
+    from .config import Settings
+    from .services.memory_service import MemoryService
 
     s = get_settings()
-    store = MemoryStore(db or s.db_path, s.tenant_id)
-    ctx = Context(store, GeminiLLM(s), GeminiEmbedder(s), s)
-    if clock:
-        ctx.clock = clock
-    return ctx
+    if db:  # explicit SQLite file overrides DATABASE_URL for local experiments
+        from dataclasses import replace
+        s = replace(s, database_url="", db_path=db)
+    assert isinstance(s, Settings)
+    return MemoryService.from_settings(s)
+
+
+def _ctx(db: str | None = None) -> Context:
+    svc = _service(db)
+    return svc.ctx(svc.settings.tenant_id)
 
 
 def _obj(ctx: Context, m) -> str:
@@ -41,13 +50,13 @@ def ingest(
     file: str = typer.Argument(..., help="Text/markdown/yaml file to learn from"),
     source_type: SourceType = typer.Option(SourceType.DEVELOPER, help="Authority tier of the source"),
     date: str = typer.Option(None, help="Document date YYYY-MM-DD (default: today)"),
-    db: str = typer.Option(None, help="SQLite path"),
+    db: str = typer.Option(None, help="SQLite path (default: DATABASE_URL, else data/memory.db)"),
 ):
     """Extract, validate and store memories from a document."""
-    ctx = _ctx(db)
+    svc = _service(db)
     with open(file) as f:
         text = f.read()
-    rep = ingest_text(ctx, text, os.path.basename(file), source_type, date)
+    rep = svc.ingest(svc.settings.tenant_id, text, os.path.basename(file), source_type, date)
     if rep.skipped_duplicate:
         console.print("[yellow]already ingested (identical content)[/yellow]")
         return
@@ -60,16 +69,15 @@ def ingest(
 @app.command()
 def ask(question: str, db: str = typer.Option(None), show_context: bool = typer.Option(False)):
     """Answer a question from memory (current, historical and as-of aware)."""
-    ctx = _ctx(db)
-    st = agent_ask(ctx, question)
-    a = st["answer"]
-    console.print(f"[bold]{a.answer}[/bold]")
-    if a.values:
-        console.print(f"values: {a.values}")
-    if a.unknown:
+    svc = _service(db)
+    r = svc.ask(svc.settings.tenant_id, question)
+    console.print(f"[bold]{r['answer']}[/bold]")
+    if r["values"]:
+        console.print(f"values: {r['values']}")
+    if r["unknown"]:
         console.print("[yellow]memory does not contain the answer[/yellow]")
     if show_context:
-        console.print("\n[dim]" + st.get("context_text", "(no memory used)") + "[/dim]")
+        console.print("\n[dim]" + (r["context"] or "(no memory used)") + "[/dim]")
 
 
 @app.command()
@@ -112,14 +120,75 @@ def decide(review_id: str, approve: bool = typer.Option(..., "--approve/--reject
     console.print("done")
 
 
+# ---------------------------------------------------------------- service management
+@db_app.command("migrate")
+def db_migrate():
+    """Apply database migrations (Postgres). Idempotent; safe to run from several containers."""
+    from .logging_setup import setup_logging
+    from .store.migrate import apply_migrations
+
+    s = get_settings()
+    setup_logging(s.log_level)
+    if not s.database_url:
+        console.print("[yellow]DATABASE_URL is not set: the local SQLite store creates its schema automatically.[/yellow]")
+        return
+    applied = apply_migrations(s.database_url, s.embed_dim)
+    console.print(f"applied: {applied}" if applied else "database is up to date")
+
+
+@app.command()
+def worker():
+    """Run the write-path worker (claims ingest jobs from the queue)."""
+    from .logging_setup import setup_logging
+    from .worker import run_worker
+
+    s = get_settings()
+    setup_logging(s.log_level)
+    run_worker(_service())
+
+
+@app.command()
+def serve(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):
+    """Run the HTTP API with uvicorn."""
+    import uvicorn
+
+    uvicorn.run("memory_agent.api.app:create_app", factory=True, host=host, port=port, reload=reload)
+
+
+@tenant_app.command("create")
+def tenant_create(name: str, tenant_id: str = typer.Option(None, help="Explicit id (default: generated)")):
+    """Create a tenant and its first API key. The key is shown once."""
+    from . import tenants
+
+    svc = _service()
+    tid = tenants.create_tenant(svc.store, name, tenant_id)
+    key = tenants.create_api_key(svc.store, tid, "initial")
+    console.print(f"tenant: [bold]{tid}[/bold]\napi key (store it now, it cannot be shown again):\n[bold green]{key}[/bold green]")
+
+
+@tenant_app.command("key")
+def tenant_key(tenant_id: str, name: str = "additional"):
+    """Create another API key for an existing tenant."""
+    from . import tenants
+
+    svc = _service()
+    try:
+        key = tenants.create_api_key(svc.store, tenant_id, name)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1) from e
+    console.print(f"[bold green]{key}[/bold green]")
+
+
 @app.command()
 def demo():
-    """Replay the Stripe -> Razorpay story in a throwaway in-memory store (uses the LLM)."""
-    from .llm.gemini import GeminiEmbedder, GeminiLLM
+    """Replay the Stripe -> Razorpay story in a throwaway in-memory store (uses the configured LLM provider)."""
+    from .llm.factory import create_embedder, create_llm
+    from .store.sqlite import MemoryStore
 
     s = get_settings()
     day = {"d": "2025-02-01"}
-    ctx = Context(MemoryStore(":memory:"), GeminiLLM(s), GeminiEmbedder(s), s, lambda: day["d"])
+    ctx = Context(MemoryStore(":memory:"), create_llm(s), create_embedder(s), s, lambda: day["d"])
     docs = [
         ("2025-02-01", SourceType.OFFICIAL_DOCS, "arch-2025.md",
          ("PaymentService uses Stripe as its payment provider. It is owned by the Payments Team "

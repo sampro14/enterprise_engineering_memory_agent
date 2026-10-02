@@ -16,8 +16,7 @@ from eval.scenarios import generate
 from eval.systems import FullMemory, HistoryOnly, NoMemory, VectorRAG
 from memory_agent.config import Settings
 from memory_agent.context import Context
-from memory_agent.llm.cache import DiskCache
-from memory_agent.llm.gemini import GeminiEmbedder, GeminiLLM
+from memory_agent.llm.factory import create_embedder, create_llm
 from memory_agent.store.sqlite import MemoryStore
 
 
@@ -34,12 +33,12 @@ class CountingLLM:
         return self.inner.generate_json(*a, **k)
 
 
-def make_ctx(cache: DiskCache) -> Context:
+def make_ctx(cache=None) -> Context:
     s = Settings()
-    return Context(MemoryStore(), CountingLLM(GeminiLLM(s, cache)), GeminiEmbedder(s, cache), s)
+    return Context(MemoryStore(), CountingLLM(create_llm(s)), create_embedder(s), s)
 
 
-def build_systems(keys: list[str], cache: DiskCache):
+def build_systems(keys: list[str], cache=None):
     table = {
         "A": lambda c: NoMemory(c),
         "B": lambda c: HistoryOnly(c, window=10),
@@ -51,7 +50,7 @@ def build_systems(keys: list[str], cache: DiskCache):
 
 
 def run(seeds: list[int], keys: list[str], workers: int, out_dir: str):
-    cache = DiskCache(Settings().cache_path)
+    cache = None
     graded: dict[str, list[Graded]] = collections.defaultdict(list)
     raw: list[dict] = []
     calls: dict[str, int] = collections.defaultdict(int)

@@ -18,15 +18,14 @@ from eval.simulator import RULES, STEPS, execute, make_sequence
 from memory_agent.config import Settings
 from memory_agent.context import Context
 from memory_agent.graph import build_task_graph
-from memory_agent.llm.cache import DiskCache
-from memory_agent.llm.gemini import GeminiEmbedder, GeminiLLM
+from memory_agent.llm.factory import create_embedder, create_llm
 from memory_agent.store.sqlite import MemoryStore
 from memory_agent.task_agent import plan_deployment
 
 
-def make_ctx(cache: DiskCache) -> Context:
+def make_ctx(cache=None) -> Context:
     s = Settings(experience_min_evidence=int(os.getenv("EXP_MIN_EVIDENCE", "3")))
-    return Context(MemoryStore(), GeminiLLM(s, cache), GeminiEmbedder(s, cache), s)
+    return Context(MemoryStore(), create_llm(s), create_embedder(s), s)
 
 
 @dataclass
@@ -117,7 +116,7 @@ def main():
     ap.add_argument("--systems", default="A,B,C,F")
     ap.add_argument("--out", default="eval/results")
     a = ap.parse_args()
-    cache = DiskCache(Settings().cache_path)
+    cache = None
     kinds = {"A": ("A: no memory", NoMem), "B": ("B: history (last 8 episodes)", HistoryAgent),
              "C": ("C: episodic RAG (top-4)", EpisodicRAG), "F": ("Full: experience memory", ExperienceAgent)}
     keys = a.systems.split(",")

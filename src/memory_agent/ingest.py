@@ -76,8 +76,11 @@ def build_candidate(
 
 
 def ingest_text(
-    ctx: Context, text: str, uri: str, source_type: SourceType = SourceType.DEVELOPER, doc_date: str | None = None
+    ctx: Context, text: str, uri: str, source_type: SourceType = SourceType.DEVELOPER, doc_date: str | None = None,
+    unknown_relation: str = "review",
 ) -> IngestReport:
+    """unknown_relation: "review" queues facts with relations outside the ontology for a human (default);
+    "drop" discards them (used for machine-generated text such as task outcomes, which would flood the queue)."""
     report = IngestReport(uri=uri)
     h = hashlib.sha256(f"{source_type.value}|{text}".encode()).hexdigest()
     if ctx.store.source_seen(h):
@@ -88,6 +91,10 @@ def ingest_text(
     # Process older facts first so a same-document change (old until X, new from X) is coherent.
     facts.sort(key=lambda f: (f.valid_from or f.valid_until or doc_date, f.valid_from is not None))
     for fact in facts:
+        if unknown_relation == "drop" and get_relation(fact.relation) is None:
+            report.outcomes.append(FactOutcome(fact.subject, fact.relation, fact.object, Decision.REJECT,
+                                               "relation not in ontology (dropped)"))
+            continue
         cand, review_reason = build_candidate(ctx, fact, text, uri, source_type, doc_date)
         if cand is None:
             ctx.store.add_review(f"ambiguous_entity: {review_reason}", fact.model_dump_json(), ctx.now())

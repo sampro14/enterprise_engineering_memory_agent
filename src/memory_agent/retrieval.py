@@ -1,6 +1,7 @@
 """Hybrid retrieval (design 16-17): entity + graph traversal + vector, temporal filter, re-rank, conflict check."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from .context import Context
@@ -9,6 +10,18 @@ from .models import UNKNOWN_START, Memory
 from .temporal import open_conflicts
 
 MAX_HOPS = 2
+
+
+def mentioned_entities(ctx: Context, text: str) -> list[str]:
+    """Names of known entities that appear in `text` (by name or alias, case-insensitive, whole-token). A deterministic
+    fallback so retrieval never depends on an LLM noticing a service name."""
+    found: list[str] = []
+    for e in ctx.store.list_entities():
+        for alias in {e.name, *ctx.store.aliases_of(e.id)}:
+            if len(alias) >= 3 and re.search(rf"(?<![A-Za-z0-9]){re.escape(alias)}(?![A-Za-z0-9])", text, re.IGNORECASE):
+                found.append(e.name)
+                break
+    return found
 
 
 @dataclass

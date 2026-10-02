@@ -151,8 +151,7 @@ def mine(ctx: Context) -> list[str]:
             "recommended_action": draft.recommended_action, "created_at": now, "last_verified": now,
         })
         for e in group:
-            s.db.execute("INSERT INTO experience_evidence VALUES (?,?)", (eid, e.id))
-        s.db.commit()
+            s.link_experience_evidence(eid, e.id)
         s.put_vector("experience", eid, ctx.embedder.embed([_experience_text(draft.pattern, draft.conditions)])[0])
         touched.append(eid)
     return touched

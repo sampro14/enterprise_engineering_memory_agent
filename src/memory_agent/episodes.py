@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass
 
 from pydantic import BaseModel, Field
@@ -54,10 +55,10 @@ def log_episode(ctx: Context, task_id: str, task: str, plan: list[str], outcome:
     ctx.store.insert("episodes", {
         "id": ep.id, "tenant_id": ctx.store.tenant, "task_id": task_id, "summary": ep.summary, "outcome": outcome,
         "timestamp": ep.timestamp, "signature": ep.signature, "conditions": json.dumps(r.conditions),
+        "ordinal": time.time_ns(),
     })
     for e in entity_ids or []:
-        ctx.store.db.execute("INSERT INTO episode_entities VALUES (?,?)", (ep.id, e))
-    ctx.store.db.commit()
+        ctx.store.link_episode_entity(ep.id, e)
     ctx.store.put_vector("episode", ep.id, ctx.embedder.embed([ep.summary])[0])
     return ep
 
@@ -67,4 +68,4 @@ def episodes(ctx: Context, outcome: str | None = None) -> list[Episode]:
     if outcome:
         q, p = q + " AND outcome=?", [*p, outcome]
     return [Episode(r["id"], r["task_id"], r["summary"], r["outcome"], r["timestamp"], r["signature"],
-                    json.loads(r["conditions"] or "[]"), r["counter_of"]) for r in ctx.store.fetch(q + " ORDER BY timestamp, rowid", p)]
+                    json.loads(r["conditions"] or "[]"), r["counter_of"]) for r in ctx.store.fetch(q + " ORDER BY timestamp, ordinal", p)]
