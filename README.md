@@ -1,195 +1,134 @@
-<h1 align="center">🧠 Enterprise Engineering Memory Agent</h1>
+# Enterprise Engineering Memory Agent
 
-<p align="center">
-  <b>A persistent memory layer for AI agents that knows what is true <i>now</i>, what was true <i>before</i>, and what to <i>distrust</i>.</b>
-</p>
+Persistent, temporal, confidence-aware **organizational memory for AI agents**: it tracks *what is true now, what was
+true before, and what to distrust*, and learns lessons from repeated failures. Design:
+[Enterprise_Engineering_Memory_Agent_Design.md](Enterprise_Engineering_Memory_Agent_Design.md). Evidence and open
+questions: [docs/POC_REPORT.md](docs/POC_REPORT.md).
 
-<p align="center">
-  <img src="https://img.shields.io/badge/status-MVP%20in%20active%20development-2DD4BF?style=flat-square" alt="Status: MVP in active development" />
-  <img src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.12+" />
-  <img src="https://img.shields.io/badge/LangGraph-workflows-1C3C3C?style=flat-square&logo=langchain&logoColor=white" alt="LangGraph" />
-  <img src="https://img.shields.io/badge/LLM-Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white" alt="Gemini" />
-  <img src="https://img.shields.io/badge/package-uv-DE5FE9?style=flat-square&logo=uv&logoColor=white" alt="uv" />
-  <img src="https://img.shields.io/badge/tests-30%20passing%20offline-2EA44F?style=flat-square&logo=pytest&logoColor=white" alt="30 tests passing offline" />
-</p>
-
-<p align="center">
-  <a href="#-why-this-exists">Why</a> ·
-  <a href="#-how-it-works">How it works</a> ·
-  <a href="#-quickstart">Quickstart</a> ·
-  <a href="#-evaluation">Evaluation</a> ·
-  <a href="#-roadmap-poc--mvp">Roadmap</a> ·
-  <a href="Enterprise_Engineering_Memory_Agent_Design.md">Design doc</a>
-</p>
-
----
-
-## 💡 Why this exists
-
-Engineering knowledge changes constantly. A service moves from Stripe to Razorpay, an ADR supersedes an old one, an incident report contradicts the docs, and an agent confidently repeats last quarter's answer.
-
-**Vector RAG treats every document as equally true and equally current.** It surfaces stale or unverified text, and the LLM trusts it.
-
-This project treats memory as **structured, time-aware, source-aware facts** instead of a pile of embeddings:
-
-| Question an agent needs to answer | Vector RAG | This memory layer |
-|---|---|---|
-| *What payment provider does PaymentService use **now**?* | Often returns the outdated one | Current fact from the most authoritative source |
-| *What did it use **in March**?* | No notion of time | Bitemporal "as-of" query |
-| *When did it **change**?* | ❌ | Change timeline per entity |
-| *A developer's Slack claim contradicts the production config* | Both retrieved, LLM guesses | Conflict detected, sent to human review, history kept |
-| *The agent failed this task the same way 3 times* | ❌ | Verified lessons promoted into experience memory |
-
----
-
-## ⚙️ How it works
-
-### Write path: from raw text to trusted facts
-
-```mermaid
-flowchart LR
-  T[Raw text<br/>ADR · config · incident · chat] --> X[LLM extraction<br/>untrusted]
-  X --> ER[Entity resolution<br/>aliases · name variants]
-  ER --> V{Validation<br/>ontology · cardinality<br/>conflict rules · confidence}
-  V -- accepted --> C[Consolidation]
-  V -- conflict / uncertain --> RQ[Human review queue]
-  RQ -- approve --> C
-  C --> S[(Bitemporal store<br/>valid time + system time)]
+```
+client --HTTP--> FastAPI (API key -> tenant) --> MemoryService --> LangGraph flows --> store (Postgres+pgvector | SQLite)
+                     |                                 |                                          ^
+                     +-- POST /ingest --> jobs table --> worker (claims with SKIP LOCKED) ---------+
+providers: create_llm() / create_embedder()  ->  gemini | anthropic | openai | fake   (retries + cache applied once)
 ```
 
-### Read path: answering with evidence
+## Quickstart
 
-```mermaid
-flowchart LR
-  Q[Question] --> QA[Query analysis] --> HR[Hybrid retrieval<br/>structured + vector]
-  HR --> S[(Bitemporal store)]
-  S --> CTX[Context builder<br/>current · history · disputed]
-  CTX --> A[Answer + evidence]
-```
-
-### Source authority (high → low)
-
-`production_config` → `architecture_repo` → `official_docs` → `incident_report` → `developer` → `agent_inference`
-
-A lower-authority claim can **never silently overwrite** a higher-authority fact. It is stored as `conflicted` and routed to review.
-
-### Key capabilities
-
-- 🕰️ **Bitemporal memory:** separate *valid time* (when it was true) and *system time* (when we learned it)
-- 🛡️ **Poisoning-resistant:** injected or stale low-authority claims are detected; accepted facts and history stay intact
-- 🔗 **Entity resolution:** handles aliases and name variants with measured similarity thresholds
-- 👤 **Human-in-the-loop:** review queue for conflicts and uncertain candidates
-- 🔁 **Experience memory:** episodes → reflection → lessons verified against evidence before they are ever injected
-- 🧭 **LangGraph workflows:** separate query flow and task flow
-
----
-
-## 🚀 Quickstart
+### A. Everything in Docker (Postgres + pgvector, API, worker)
 
 ```bash
-uv sync
-cp .env.example .env            # set GOOGLE_API_KEY (Gemini). Model IDs are configurable.
-uv run pytest                   # offline: uses a fake LLM/embedder, no network
-uv run memory-agent demo        # Stripe -> Razorpay story with real Gemini calls
+cp .env.example .env            # set GOOGLE_API_KEY (or ANTHROPIC_API_KEY / OPENAI_API_KEY and LLM_PROVIDER)
+make up                         # db, migrations, api (http://localhost:8090/docs), worker
+make tenant NAME=acme           # prints a tenant id and an API key (shown once)
 ```
 
-### CLI
+```bash
+KEY=mem_...                     # from `make tenant`
+curl -s localhost:8090/api/v1/ingest -H "Authorization: Bearer $KEY" -H 'content-type: application/json' -d '{
+  "text": "PaymentService uses Stripe as its payment provider.", "uri": "arch.md",
+  "source_type": "official_docs", "doc_date": "2025-02-01"}'          # -> 202 {"job_id": "...", "status_url": "..."}
+curl -s localhost:8090/api/v1/agent/ask -H "Authorization: Bearer $KEY" -H 'content-type: application/json' \
+  -d '{"question": "Which payment provider does PaymentService use?"}'
+```
+
+`make e2e` runs a full live scenario over HTTP (ingest through the queue, temporal questions, alias resolution, a poisoning
+claim landing in review, the review decision, tenant isolation, and the two-phase task flow). Interactive docs: `/docs`.
+
+### B. Local, no infrastructure (SQLite)
 
 ```bash
+make setup                      # uv sync, creates .env
+uv run pytest                   # offline: fake providers, no network
+uv run memory-agent demo        # Stripe -> Razorpay story with real LLM calls
 uv run memory-agent ingest docs/adr-042.md --source-type architecture_repo --date 2026-09-15
 uv run memory-agent ask "Which payment provider does PaymentService use now?" --show-context
 uv run memory-agent timeline PaymentService
-uv run memory-agent reviews                       # conflicts / uncertain candidates awaiting a human
-uv run memory-agent decide rev_xxx --approve
 ```
 
----
+Leave `DATABASE_URL` empty to use SQLite (`MEMORY_DB`); set it to use Postgres.
 
-## 📊 Evaluation
+## LLM providers (factory)
 
-All systems use the **same LLM (Gemini 2.5 Flash, temperature 0), prompt and answer schema**; only the memory differs. Grading is programmatic on structured answers, with **no LLM judge**. Reported numbers use **held-out seeds**. Benchmarks are synthetic, with ground truth by construction.
+`LLM_PROVIDER` and `EMBED_PROVIDER` are independent, so Claude can generate while Gemini or OpenAI embeds.
 
-### Experiment 1: Temporal facts, contradictions, poisoning (147 questions per system)
+| Provider | LLM | Embeddings | Status |
+|---|---|---|---|
+| `gemini` | yes | yes | **live-tested** (default) |
+| `anthropic` | yes | no (Anthropic has no embeddings API) | contract-tested with mocked SDK; not live-tested |
+| `openai` | yes | yes | contract-tested with mocked SDK; not live-tested |
+| `fake` | scripted | hashed bag-of-words | offline tests, CI |
 
-| Metric | No memory | Last-10 docs | All docs in context | Vector RAG | **Full memory** |
-|---|---|---|---|---|---|
-| Current fact | 0% | 55% | 100% | 58% | **100%** |
-| Historical (as-of) | 0% | 45% | 100% | 100% | **100%** |
-| Alias variants | 0% | 44% | 100% | 92% | **100%** |
-| Out-of-order ingestion | 0% | 25% | 100% | 75% | **100%** |
-| **Overall** | 0% | 42% | 93% | 82% | **95%** |
-| Stale / poisoned answer rate ↓ | 0% | 8% | 16% | 43% | **14%** |
-| Avg context size | 0 | 1.6k | 9.1k | 0.75k | 2.3k |
+Add one by writing an adapter and `@register_llm("name")` in [llm/factory.py](src/memory_agent/llm/factory.py). Retries and the
+on-disk response cache (`LLM_CACHE`) are applied by the factory, not by adapters. `EMBED_DIM` (default 3072) must match the
+vector column; changing it needs a new migration.
 
-**Full memory vs vector RAG: +12.9 points (95% bootstrap CI [+8.2, +18.4])**, using about 4× less context than stuffing every document.
+## API (design section 26)
 
-### Experiment 2: Learning from repeated mistakes (5 × 30 tasks)
+All `/api/v1` routes need `Authorization: Bearer <key>`; the tenant comes from the key, never from the body.
 
-Experience memory beats no memory (66% → 77% success) and **improves over the run (65% → 90% by task block)**, but does not yet beat plain conversation history (91%). See [Known limitations](#-known-limitations).
+| Area | Endpoints |
+|---|---|
+| Ingest (async) | `POST /ingest` -> 202 + job, `GET /jobs/{id}`, `GET /jobs` |
+| Memories | `POST /memories` (sync), `POST /memories/search`, `GET /memories/{id}/history`, `POST /memories/{id}/verify`, `POST /memories/{id}/invalidate`, `DELETE /memories/{id}` |
+| Entities | `GET /entities?name=`, `GET /entities/{id}`, `GET /entities/{id}/graph?as_of=`, `POST /entities/{id}/merge`, `POST /entities/merges/{id}/revert` |
+| Review | `GET /conflicts`, `GET /reviews`, `POST /reviews/{id}/decision` |
+| Agent | `POST /agent/ask`, `POST /agent/tasks`, `GET /agent/tasks/{id}`, `POST /agent/tasks/{id}/outcome`, `GET /tasks/{id}/memory-context` |
+| System | `GET /healthz`, `GET /readyz` (database, migrations, provider configuration) |
+
+Errors are `{"error", "detail", "request_id"}` with 401/404/409/422 and 502/503 for provider failures; every response carries
+`X-Request-ID`. Logs are JSON on stdout.
+
+Deviations from the design's API: ingestion is one endpoint (`POST /ingest`) instead of `sources` + `run`; tasks are two-phase
+(plan, then report the outcome) because execution happens outside the memory service.
+
+## Layout
+
+| Path | What |
+|---|---|
+| `src/memory_agent/api/` | FastAPI app, auth, schemas, routers |
+| `src/memory_agent/services/memory_service.py` | every operation, tenant-scoped; used by CLI, API and worker |
+| `src/memory_agent/graph.py` | the LangGraph workflow: ask / plan / execute / outcome (design 27) |
+| `src/memory_agent/store/` | store interface, SQLite and Postgres backends, portable schema, migrations |
+| `src/memory_agent/llm/` | provider factory, adapters, retry/cache decorators |
+| `src/memory_agent/{ingest,extraction,entities,validation,consolidation,retrieval,temporal,confidence}.py` | memory pipeline (design 9, 14-17) |
+| `src/memory_agent/{episodes,experience,task_agent}.py` | reflection and experience learning (design 19) |
+| `src/memory_agent/{jobs,worker,tenants}.py` | job queue, worker, API keys |
+| `eval/`, `docs/POC_REPORT.md` | benchmarks and results |
+
+## Development
 
 ```bash
-# Reproduce
+make test               # offline unit tests (SQLite + fake providers)
+make test-integration   # same domain, API and queue tests on Postgres (docker compose up -d db)
+make lint
+make db-shell           # psql into the compose database
+```
+
+Every store, domain and API test runs on **both** SQLite and Postgres (the Postgres variants are marked `integration`),
+plus a schema-parity test. CI (`.github/workflows/ci.yml`) runs lint, the offline suite, and the Postgres suite against a
+pgvector service container.
+
+Operational notes: writes are atomic per document (a failed job leaves nothing half-written); concurrent writers of one
+tenant are serialized with a Postgres advisory lock; jobs are retried with exponential backoff, and a job whose worker
+died is reclaimed after `JOB_VISIBILITY_TIMEOUT_SECONDS`. Containers run as a non-root user.
+
+## Evaluation
+
+```bash
+# temporal facts, contradictions, poisoning, aliases, out-of-order ingestion (seed 0 = development; use 1+ for held-out)
 uv run python -m eval.run_eval --seeds 3 --first-seed 1 --systems A,B,BF,C,F
+# repeated mistakes on a deployment simulator with hidden organization-specific rules
 uv run python -m eval.experience_eval --seeds 3 --first-seed 1 --tasks 24 --systems A,B,C,F
 ```
 
-Full methodology, raw numbers and discussion: [docs/POC_REPORT.md](docs/POC_REPORT.md)
+Systems: **A** no memory, **B** conversation history, **BF** all documents in context, **C** vector RAG, **F** the full memory
+system. Same LLM, prompt and answer schema for all; programmatic grading. See [docs/POC_REPORT.md](docs/POC_REPORT.md) for
+results and, importantly, what they do not show (small worlds, synthetic data, experience memory lost to simple baselines).
 
----
+## Known limitations
 
-## 🗺️ Code map
-
-| Component | Code |
-|---|---|
-| Extraction (LLM, untrusted text) | [extraction.py](src/memory_agent/extraction.py) |
-| Ontology + cardinality | [ontology.py](src/memory_agent/ontology.py) |
-| Entity resolution | [entities.py](src/memory_agent/entities.py) |
-| Validation, conflict rules, confidence | [validation.py](src/memory_agent/validation.py), [confidence.py](src/memory_agent/confidence.py) |
-| Consolidation | [consolidation.py](src/memory_agent/consolidation.py) |
-| Bitemporal storage and queries | [store/sqlite.py](src/memory_agent/store/sqlite.py), [temporal.py](src/memory_agent/temporal.py) |
-| Hybrid retrieval | [retrieval.py](src/memory_agent/retrieval.py) |
-| LangGraph workflows (query + task) | [graph.py](src/memory_agent/graph.py) |
-| Episodes, reflection, experience | [episodes.py](src/memory_agent/episodes.py), [experience.py](src/memory_agent/experience.py) |
-| Human review queue | [review.py](src/memory_agent/review.py) |
-| Write-path entry point | [ingest.py](src/memory_agent/ingest.py) |
-
----
-
-## 🛣️ Roadmap: PoC → MVP
-
-The core memory engine is built and evaluated. The MVP work is turning it into a deployable service.
-
-**✅ Done (core engine)**
-- [x] Extraction → entity resolution → validation → consolidation write path
-- [x] Bitemporal storage with as-of and timeline queries
-- [x] Authority-aware conflict handling and human review queue
-- [x] Hybrid retrieval and LangGraph query/task flows
-- [x] Experience memory with evidence-verified lessons
-- [x] Reproducible evaluation harness with held-out seeds
-
-**🚧 In progress / next (MVP)**
-- [ ] PostgreSQL + pgvector storage (replacing SQLite + NumPy vectors)
-- [ ] Graph layer for relation traversal (Neo4j or equivalent)
-- [ ] FastAPI service + async write path
-- [ ] Source connectors (repos, docs, incident tools)
-- [ ] Auth, ACLs and deletion propagation
-- [ ] Observability and a review UI
-- [ ] Machine-readable `disputed_values` in the answer schema
-- [ ] Scale experiment: thousands of documents, where context-stuffing and vector RAG are expected to degrade
-
----
-
-## ⚠️ Known limitations
-
-Being explicit about what the current results do and don't show:
-
-- **Benchmarks are synthetic.** They don't yet demonstrate real-enterprise performance.
-- **At the current scale (~60 entities), full memory ties with putting all documents in context** (95% vs 93%, within noise). The scale experiment is designed to test where structured memory pulls ahead.
-- **Experience memory underperforms raw conversation history** on repeated-mistake tasks; injecting raw failed episodes alongside distilled lessons is the next thing to test.
-- Dates are day-granular; review approval currently covers conflicts and agent-inference candidates only.
-
----
-
-<p align="center">
-  Built by <a href="https://github.com/sampro14">Sameer Atram</a> · Design: <a href="Enterprise_Engineering_Memory_Agent_Design.md">System design doc</a> · Results: <a href="docs/POC_REPORT.md">Evaluation report</a>
-</p>
+- No row-level security in Postgres (tenant scoping is enforced in the store layer and tested, not by the database).
+- Deletion propagation is basic: a deleted memory's evidence text and vectors are purged, but derived experiences are not
+  re-verified. There are no ACLs on individual memories yet.
+- Dates are day-granular. One LLM provider is live-tested. Review approval supports conflicts and agent-inference candidates.
+- Ingestion takes text; git/CI/incident connectors are not built.

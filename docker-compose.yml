@@ -1,0 +1,64 @@
+name: memory-agent
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql://${POSTGRES_USER:-memory}:${POSTGRES_PASSWORD:-memory}@db:5432/${POSTGRES_DB:-memory}
+  LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+  EMBED_PROVIDER: ${EMBED_PROVIDER:-gemini}
+  LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash}
+  EMBED_MODEL: ${EMBED_MODEL:-gemini-embedding-001}
+  EMBED_DIM: ${EMBED_DIM:-3072}
+  GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  LLM_CACHE: ""
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-memory}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-memory}
+      POSTGRES_DB: ${POSTGRES_DB:-memory}
+    ports:
+      - "${POSTGRES_PORT:-5439}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-memory} -d ${POSTGRES_DB:-memory}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build: .
+    command: ["memory-agent", "db", "migrate"]
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build: .
+    environment: *app-env
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8090}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build: .
+    command: ["memory-agent", "worker"]
+    environment: *app-env
+    healthcheck:
+      disable: true  # no HTTP server in the worker; liveness is the process itself (restart policy handles crashes)
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:

@@ -11,10 +11,19 @@ dependencies = [
     "typer>=0.12",
     "rich>=13.7",
     "python-dotenv>=1.0",
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.54.0",
+    "psycopg[binary,pool]>=3.3.6",
+    "anthropic>=1.8.0",
+    "openai>=3.19.2",
 ]
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.5"]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=8",
+    "ruff>=0.5",
+]
 
 [project.scripts]
 memory-agent = "memory_agent.cli:app"
@@ -29,6 +38,7 @@ packages = ["src/memory_agent"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
+markers = ["integration: needs Postgres (set DATABASE_URL)", "live: calls a real LLM provider (set RUN_LIVE=1)"]
 
 [tool.ruff]
 line-length = 100
