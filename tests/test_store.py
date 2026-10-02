@@ -32,10 +32,10 @@ def test_close_validity_is_bitemporal():
 
 
 def test_tenant_isolation():
-    a, b = MemoryStore(), MemoryStore(tenant_id="other")
+    a = MemoryStore()
+    b = a.for_tenant("other")  # same physical db, different tenant view
     a.add_entity("service", "X", "2025-01-01")
     assert len(a.list_entities()) == 1
-    b.db = a.db  # same physical db, different tenant view
     assert b.list_entities() == []
 
 
