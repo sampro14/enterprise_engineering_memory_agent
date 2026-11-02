@@ -1954,13 +1954,7 @@ The harness exists from Phase 1. This phase adds the full benchmark suite.
 
 ---
 
-# 42. Portfolio Positioning
-
-Moved to [Portfolio_Positioning.md](Portfolio_Positioning.md).
-
----
-
-# 43. Recommended Research Contribution
+# 42. Recommended Research Contribution
 
 The project should not claim that the general concept of agent memory is novel. Temporal knowledge-graph memory (e.g., Zep/Graphiti with bitemporal edges) and general agent memory layers (e.g., Mem0, MemGPT/Letta) already exist. The defensible contribution is the confidence, source-authority and conflict-resolution layer together with experience consolidation.
 
@@ -1990,7 +1984,7 @@ Research hypothesis:
 
 ---
 
-# 44. Final Architecture
+# 43. Final Architecture
 
 ```text
                          USER
@@ -2056,7 +2050,7 @@ Research hypothesis:
 
 ---
 
-# 45. Core Thesis
+# 44. Core Thesis
 
 The Enterprise Memory Agent is not simply an LLM with a larger context window.
 

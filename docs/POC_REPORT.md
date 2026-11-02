@@ -1,7 +1,7 @@
 # PoC report
 
 Status of the proof of concept against its exit criteria, with what the data does and does not support.
-Raw outputs: `eval/results/` (`temporal_*.md|jsonl`, `experience_*.md|jsonl`, `n1/`, `n2/`).
+Raw outputs are written to `eval/results/` (not committed; regenerate with the commands in the README).
 
 ## Setup (applies to everything below)
 
