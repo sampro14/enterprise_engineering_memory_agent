@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Enterprise Engineering Memory Agent</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .chip { transition: background-color .15s ease, transform .1s ease; }
+  .chip:hover { transform: translateY(-1px); }
+  .tab-btn.active { background-color: #111827; color: white; }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fade-in { animation: fadein .25s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+  <!-- Connect screen -->
+  <div id="connect-view" class="min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+      <h1 class="text-xl font-semibold mb-1">🧠 Memory Agent</h1>
+      <p class="text-slate-500 text-sm mb-6">Persistent, temporal, confidence-aware organizational memory for AI agents.</p>
+      <label class="block text-sm font-medium text-slate-700 mb-1">API key</label>
+      <input id="api-key-input" type="password" placeholder="mem_..."
+             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-slate-800" />
+      <p class="text-xs text-slate-400 mb-4">
+        Create one with <code class="bg-slate-100 px-1 rounded">make tenant NAME=demo</code> or
+        <code class="bg-slate-100 px-1 rounded">memory-agent tenant create demo</code>.
+      </p>
+      <button id="connect-btn" class="w-full bg-slate-900 text-white rounded-lg py-2 text-sm font-medium hover:bg-slate-700">
+        Connect
+      </button>
+      <p id="connect-error" class="text-sm text-red-600 mt-3 hidden"></p>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app-view" class="hidden min-h-screen">
+    <header class="border-b border-slate-200 bg-white">
+      <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🧠</span>
+          <span class="font-semibold">Memory Agent</span>
+          <span id="tenant-badge" class="text-xs bg-slate-100 text-slate-600 rounded-full px-2 py-0.5 ml-2"></span>
+        </div>
+        <button id="disconnect-btn" class="text-sm text-slate-400 hover:text-slate-700">Disconnect</button>
+      </div>
+      <nav class="max-w-5xl mx-auto px-6 flex gap-2 pb-3">
+        <button data-tab="demo" class="tab-btn active px-4 py-1.5 rounded-full text-sm font-medium bg-slate-100">Demo</button>
+        <button data-tab="ask" class="tab-btn px-4 py-1.5 rounded-full text-sm font-medium bg-slate-100">Ask</button>
+        <button data-tab="review" class="tab-btn px-4 py-1.5 rounded-full text-sm font-medium bg-slate-100">Review Queue</button>
+      </nav>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-6 py-8">
+
+      <!-- Demo tab -->
+      <section id="tab-demo" class="space-y-8">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6">
+          <h2 class="font-semibold mb-1">Stripe → Razorpay story</h2>
+          <p class="text-sm text-slate-500 mb-4">
+            Replays three sample documents, oldest to newest, so you can watch the agent learn what's true now,
+            what used to be true, and what it should no longer trust.
+          </p>
+          <button id="load-demo-btn" class="bg-emerald-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-emerald-700">
+            ▶ Load Stripe → Razorpay Demo
+          </button>
+          <div id="demo-feed" class="mt-5 space-y-2"></div>
+          <div id="demo-questions" class="mt-5 hidden">
+            <p class="text-sm font-medium text-slate-700 mb-2">Try asking:</p>
+            <div id="demo-question-chips" class="flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-6">
+          <h2 class="font-semibold mb-1">Custom ingest</h2>
+          <p class="text-sm text-slate-500 mb-4">Feed it your own fact and watch the same pipeline run.</p>
+          <div class="grid gap-3">
+            <textarea id="ingest-text" rows="3" placeholder="e.g. PaymentService uses Stripe as its payment provider."
+                      class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800"></textarea>
+            <div class="grid grid-cols-3 gap-3">
+              <input id="ingest-uri" type="text" placeholder="uri (e.g. chat)"
+                     class="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <select id="ingest-source" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="production_config">production_config</option>
+                <option value="architecture_repo">architecture_repo</option>
+                <option value="official_docs">official_docs</option>
+                <option value="incident_report">incident_report</option>
+                <option value="developer" selected>developer</option>
+                <option value="agent_inference">agent_inference</option>
+              </select>
+              <input id="ingest-date" type="date" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            </div>
+            <button id="ingest-btn" class="bg-slate-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-slate-700 w-fit">
+              Ingest
+            </button>
+          </div>
+          <div id="ingest-feed" class="mt-4 space-y-2"></div>
+        </div>
+      </section>
+
+      <!-- Ask tab -->
+      <section id="tab-ask" class="hidden space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6">
+          <div class="flex gap-3">
+            <input id="ask-input" type="text" placeholder="Which payment provider does PaymentService currently use?"
+                   class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800" />
+            <button id="ask-btn" class="bg-slate-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-slate-700">
+              Ask
+            </button>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">Ask about history in plain language, e.g. "...in March 2026".</p>
+        </div>
+        <div id="ask-result"></div>
+      </section>
+
+      <!-- Review queue tab -->
+      <section id="tab-review" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold">Pending reviews</h2>
+          <button id="refresh-reviews-btn" class="text-sm text-slate-400 hover:text-slate-700">↻ Refresh</button>
+        </div>
+        <div id="review-list" class="space-y-3"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

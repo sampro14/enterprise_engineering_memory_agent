@@ -4,10 +4,12 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .. import __version__
 from ..config import Settings, get_settings
@@ -17,6 +19,8 @@ from ..services.memory_service import ConflictError, MemoryService, NotFoundErro
 from .routers import api, system
 
 log = logging.getLogger("memory_agent.api")
+
+UI_DIR = Path(__file__).resolve().parent.parent / "ui"
 
 
 def _err(request: Request, status: int, error: str, detail: str) -> JSONResponse:
@@ -94,4 +98,6 @@ def create_app(service: MemoryService | None = None, settings: Settings | None =
 
     app.include_router(system)
     app.include_router(api)
+    if UI_DIR.is_dir():
+        app.mount("/", StaticFiles(directory=UI_DIR, html=True), name="ui")
     return app
