@@ -1,4 +1,4 @@
-.PHONY: setup up down logs migrate tenant test test-integration lint e2e demo db-shell
+.PHONY: setup up down logs migrate tenant test test-integration lint e2e demo demo-site db-shell
 
 setup:            ## create venv, install deps, seed .env
 	uv sync
@@ -35,6 +35,12 @@ e2e:              ## live end-to-end scenario against the running stack (needs a
 
 demo:
 	uv run memory-agent demo
+
+demo-site:        ## build the static recorded replay into _site (published to GitHub Pages by CI)
+	rm -rf _site && mkdir _site
+	cp src/memory_agent/ui/* demo/replay.js demo/fixture.json _site/
+	sed 's|<script src="app.js"></script>|<script src="replay.js"></script><script src="app.js"></script>|' src/memory_agent/ui/index.html > _site/index.html
+	grep -q 'replay.js' _site/index.html
 
 db-shell:
 	docker compose exec db psql -U $${POSTGRES_USER:-memory} -d $${POSTGRES_DB:-memory}

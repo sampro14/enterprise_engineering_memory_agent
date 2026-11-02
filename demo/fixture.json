@@ -1,0 +1,379 @@
+{
+ "recorded_at": "2026-11-02",
+ "answers": {
+  "pending": {
+   "Which payment provider does PaymentService currently use?": {
+    "answer": "The information regarding the current payment provider for PaymentService is disputed. While it was migrated to Razorpay on 2026-09-11, there is a conflicting claim from 2026-10-05 that it uses Stripe.",
+    "values": [
+     "Razorpay",
+     "Stripe"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md",
+     "chat"
+    ],
+    "conflicts": [
+     "PaymentService payment_provider = Stripe (claimed 2026-10-05, unverified, from chat [developer]) contradicts the accepted fact"
+    ],
+    "used_memory": true,
+    "context": "VALID AT THE REQUESTED DATE:\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService payment_provider = Razorpay (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n\nHISTORICAL:\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n\nUNRESOLVED CONFLICTS:\n- PaymentService payment_provider = Stripe (claimed 2026-10-05, unverified, from chat [developer]) contradicts the accepted fact",
+    "as_of": "2026-11-02"
+   },
+   "Which payment provider did PaymentService use in March 2026?": {
+    "answer": "In March 2026, PaymentService used Stripe as its payment provider.",
+    "values": [
+     "Stripe"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md",
+     "arch-2025.md"
+    ],
+    "conflicts": [
+     "PaymentService payment_provider = Stripe (claimed 2026-10-05, unverified, from chat [developer]) contradicts the accepted fact"
+    ],
+    "used_memory": true,
+    "context": "VALID AT THE REQUESTED DATE:\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n\nHISTORICAL:\n- PaymentService payment_provider = Razorpay (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n\nUNRESOLVED CONFLICTS:\n- PaymentService payment_provider = Stripe (claimed 2026-10-05, unverified, from chat [developer]) contradicts the accepted fact",
+    "as_of": "2026-03-01"
+   },
+   "When did PaymentService switch from Stripe to Razorpay, and why?": {
+    "answer": "PaymentService switched from Stripe to Razorpay on 2026-09-11 because enterprise customers required a specific settlement workflow. However, there is a conflicting claim that PaymentService's payment provider is still Stripe as of 2026-10-05.",
+    "values": [
+     "2026-09-11",
+     "enterprise customers required a specific settlement workflow",
+     "Stripe",
+     "Razorpay"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md",
+     "chat"
+    ],
+    "conflicts": [
+     "PaymentService payment_provider = Stripe (claimed 2026-10-05, unverified, from chat [developer]) contradicts the accepted fact"
+    ],
+    "used_memory": true,
+    "context": "CURRENT:\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService payment_provider = Razorpay (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n\nHISTORICAL:\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n\nUNRESOLVED CONFLICTS:\n- PaymentService payment_provider = Stripe (claimed 2026-10-05, unverified, from chat [developer]) contradicts the accepted fact",
+    "as_of": null
+   },
+   "What is the primary database of PaymentService?": {
+    "answer": "The primary database for PaymentService is Oracle.",
+    "values": [
+     "Oracle"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md"
+    ],
+    "conflicts": [
+     "PaymentService payment_provider = Stripe (claimed 2026-10-05, unverified, from chat [developer]) contradicts the accepted fact"
+    ],
+    "used_memory": true,
+    "context": "CURRENT:\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService payment_provider = Razorpay (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n\nHISTORICAL:\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n\nUNRESOLVED CONFLICTS:\n- PaymentService payment_provider = Stripe (claimed 2026-10-05, unverified, from chat [developer]) contradicts the accepted fact",
+    "as_of": null
+   }
+  },
+  "reject": {
+   "Which payment provider does PaymentService currently use?": {
+    "answer": "PaymentService currently uses Razorpay as its payment provider.",
+    "values": [
+     "Razorpay"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md"
+    ],
+    "conflicts": [],
+    "used_memory": true,
+    "context": "VALID AT THE REQUESTED DATE:\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService payment_provider = Razorpay (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n\nHISTORICAL:\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])",
+    "as_of": "2026-11-02"
+   },
+   "Which payment provider did PaymentService use in March 2026?": {
+    "answer": "PaymentService used Stripe as its payment provider in March 2026.",
+    "values": [
+     "Stripe"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md",
+     "arch-2025.md"
+    ],
+    "conflicts": [],
+    "used_memory": true,
+    "context": "VALID AT THE REQUESTED DATE:\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n\nHISTORICAL:\n- PaymentService payment_provider = Razorpay (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])",
+    "as_of": "2026-03-01"
+   },
+   "When did PaymentService switch from Stripe to Razorpay, and why?": {
+    "answer": "PaymentService switched from Stripe to Razorpay on 2026-09-11 because enterprise customers required a specific settlement workflow.",
+    "values": [
+     "2026-09-11",
+     "enterprise customers required a specific settlement workflow"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md"
+    ],
+    "conflicts": [],
+    "used_memory": true,
+    "context": "CURRENT:\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService payment_provider = Razorpay (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n\nHISTORICAL:\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])",
+    "as_of": null
+   },
+   "What is the primary database of PaymentService?": {
+    "answer": "The primary database of PaymentService is Oracle.",
+    "values": [
+     "Oracle"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md"
+    ],
+    "conflicts": [],
+    "used_memory": true,
+    "context": "CURRENT:\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService payment_provider = Razorpay (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n\nHISTORICAL:\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])",
+    "as_of": null
+   }
+  },
+  "approve": {
+   "Which payment provider does PaymentService currently use?": {
+    "answer": "The information about the current payment provider for PaymentService is disputed. One source indicates it is Stripe, while another historical record shows Razorpay was used until 2026-10-05, and then Stripe from 2026-10-05, but with low confidence.",
+    "values": [
+     "Stripe",
+     "Razorpay"
+    ],
+    "unknown": false,
+    "citations": [
+     "chat",
+     "adr-042.md"
+    ],
+    "conflicts": [],
+    "used_memory": true,
+    "context": "VALID AT THE REQUESTED DATE:\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService payment_provider = Stripe (from 2026-10-05; confidence 0.20; sources: chat [developer])\n\nHISTORICAL:\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService payment_provider = Razorpay (from 2026-09-11 until 2026-10-05; confidence 0.84; sources: adr-042.md [architecture_repo])",
+    "as_of": "2026-11-02"
+   },
+   "Which payment provider did PaymentService use in March 2026?": {
+    "answer": "In March 2026, PaymentService used Stripe as its payment provider.",
+    "values": [
+     "Stripe"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md",
+     "arch-2025.md"
+    ],
+    "conflicts": [],
+    "used_memory": true,
+    "context": "VALID AT THE REQUESTED DATE:\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n\nHISTORICAL:\n- PaymentService payment_provider = Razorpay (from 2026-09-11 until 2026-10-05; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService payment_provider = Stripe (from 2026-10-05; confidence 0.20; sources: chat [developer])",
+    "as_of": "2026-03-01"
+   },
+   "When did PaymentService switch from Stripe to Razorpay, and why?": {
+    "answer": "PaymentService switched from Stripe to Razorpay on 2026-09-11 because enterprise customers required a specific settlement workflow.",
+    "values": [
+     "2026-09-11",
+     "enterprise customers required a specific settlement workflow"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md"
+    ],
+    "conflicts": [],
+    "used_memory": true,
+    "context": "CURRENT:\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService payment_provider = Stripe (from 2026-10-05; confidence 0.20; sources: chat [developer])\n\nHISTORICAL:\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService payment_provider = Razorpay (from 2026-09-11 until 2026-10-05; confidence 0.84; sources: adr-042.md [architecture_repo])",
+    "as_of": null
+   },
+   "What is the primary database of PaymentService?": {
+    "answer": "The primary database of PaymentService is Oracle.",
+    "values": [
+     "Oracle"
+    ],
+    "unknown": false,
+    "citations": [
+     "adr-042.md"
+    ],
+    "conflicts": [],
+    "used_memory": true,
+    "context": "CURRENT:\n- PaymentService owned_by = Payments Team (from 2025-02-01; confidence 0.78; sources: arch-2025.md [official_docs])\n- PaymentService primary_database = Oracle (from 2026-09-11; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService migration_reason = enterprise customers required a specific settlement workflow (from 2026-09-15; confidence 0.84; sources: adr-042.md [architecture_repo])\n- PaymentService payment_provider = Stripe (from 2026-10-05; confidence 0.20; sources: chat [developer])\n\nHISTORICAL:\n- PaymentService primary_database = PostgreSQL (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService payment_provider = Stripe (from 2025-02-01 until 2026-09-11; confidence 0.78; sources: adr-042.md [architecture_repo], arch-2025.md [official_docs])\n- PaymentService payment_provider = Razorpay (from 2026-09-11 until 2026-10-05; confidence 0.84; sources: adr-042.md [architecture_repo])",
+    "as_of": null
+   }
+  }
+ },
+ "decisions": {
+  "reject": {
+   "review_id": "rev_a0c047f8d2",
+   "decision": "rejected",
+   "memory_id": null
+  },
+  "approve": {
+   "review_id": "rev_bc0d7fb36e",
+   "decision": "approved",
+   "memory_id": "mem_62fe9ede4f"
+  }
+ },
+ "jobs": {
+  "arch-2025.md": {
+   "id": "job_7a6f35f27f",
+   "kind": "ingest",
+   "status": "succeeded",
+   "attempts": 1,
+   "max_attempts": 3,
+   "error": null,
+   "result": {
+    "skipped_duplicate": false,
+    "facts": 3,
+    "decisions": {
+     "ACCEPT": 3
+    },
+    "outcomes": [
+     {
+      "subject": "PaymentService",
+      "relation": "payment_provider",
+      "object": "Stripe",
+      "decision": "ACCEPT",
+      "reason": "no conflicting fact",
+      "memory_id": "mem_74d01ae3e6"
+     },
+     {
+      "subject": "PaymentService",
+      "relation": "owned_by",
+      "object": "Payments Team",
+      "decision": "ACCEPT",
+      "reason": "no conflicting fact",
+      "memory_id": "mem_4fc963ba94"
+     },
+     {
+      "subject": "PaymentService",
+      "relation": "primary_database",
+      "object": "PostgreSQL",
+      "decision": "ACCEPT",
+      "reason": "no conflicting fact",
+      "memory_id": "mem_2f5143ab5b"
+     }
+    ]
+   },
+   "created_at": "2026-11-02T08:38:26.402331Z",
+   "started_at": "2026-11-02T08:38:27.029556Z",
+   "finished_at": "2026-11-02T08:38:33.303970Z"
+  },
+  "adr-042.md": {
+   "id": "job_b854f624b1",
+   "kind": "ingest",
+   "status": "succeeded",
+   "attempts": 1,
+   "max_attempts": 3,
+   "error": null,
+   "result": {
+    "skipped_duplicate": false,
+    "facts": 5,
+    "decisions": {
+     "UPDATE_EXISTING": 2,
+     "ACCEPT": 3
+    },
+    "outcomes": [
+     {
+      "subject": "PaymentService",
+      "relation": "payment_provider",
+      "object": "Stripe",
+      "decision": "UPDATE_EXISTING",
+      "reason": "already known; adding evidence",
+      "memory_id": "mem_b30befe419"
+     },
+     {
+      "subject": "PaymentService",
+      "relation": "primary_database",
+      "object": "PostgreSQL",
+      "decision": "UPDATE_EXISTING",
+      "reason": "already known; adding evidence",
+      "memory_id": "mem_0004a56994"
+     },
+     {
+      "subject": "PaymentService",
+      "relation": "payment_provider",
+      "object": "Razorpay",
+      "decision": "ACCEPT",
+      "reason": "no conflicting fact",
+      "memory_id": "mem_e7e663cbf8"
+     },
+     {
+      "subject": "PaymentService",
+      "relation": "primary_database",
+      "object": "Oracle",
+      "decision": "ACCEPT",
+      "reason": "no conflicting fact",
+      "memory_id": "mem_1756074423"
+     },
+     {
+      "subject": "PaymentService",
+      "relation": "migration_reason",
+      "object": "enterprise customers required a specific settlement workflow",
+      "decision": "ACCEPT",
+      "reason": "multi-valued relation; no conflict possible",
+      "memory_id": "mem_351c44a5b6"
+     }
+    ]
+   },
+   "created_at": "2026-11-02T08:38:33.567977Z",
+   "started_at": "2026-11-02T08:38:34.310790Z",
+   "finished_at": "2026-11-02T08:38:42.496177Z"
+  },
+  "chat": {
+   "id": "job_bb23b19cf7",
+   "kind": "ingest",
+   "status": "succeeded",
+   "attempts": 1,
+   "max_attempts": 3,
+   "error": null,
+   "result": {
+    "skipped_duplicate": false,
+    "facts": 1,
+    "decisions": {
+     "MARK_CONFLICT": 1
+    },
+    "outcomes": [
+     {
+      "subject": "PaymentService",
+      "relation": "payment_provider",
+      "object": "Stripe",
+      "decision": "MARK_CONFLICT",
+      "reason": "newer but lower-authority claim (developer) contradicts mem_e7e663cbf8 (authority 0.85)",
+      "memory_id": "mem_7cb53551fc"
+     }
+    ]
+   },
+   "created_at": "2026-11-02T08:38:42.734410Z",
+   "started_at": "2026-11-02T08:38:43.501614Z",
+   "finished_at": "2026-11-02T08:38:45.569484Z"
+  }
+ },
+ "reviews": [
+  {
+   "id": "rev_a0c047f8d2",
+   "reason": "newer but lower-authority claim (developer) contradicts mem_e7e663cbf8 (authority 0.85)",
+   "status": "pending",
+   "memory_id": "mem_7cb53551fc",
+   "candidate": {
+    "fact": {
+     "subject": "payment service",
+     "subject_type": "service",
+     "relation": "payment_provider",
+     "object": "Stripe",
+     "object_type": "provider",
+     "valid_from": null,
+     "valid_until": null,
+     "evidence": "the payment service still uses Stripe"
+    },
+    "valid_from": "2026-10-05",
+    "valid_until": null,
+    "source_type": "developer",
+    "source_uri": "chat",
+    "authority": 0.5,
+    "observed_at": "2026-11-02",
+    "subject_name": "PaymentService",
+    "object_name": "Stripe",
+    "note": ""
+   },
+   "created_at": "2026-11-02",
+   "decided_at": null,
+   "reviewer": null
+  }
+ ]
+}
