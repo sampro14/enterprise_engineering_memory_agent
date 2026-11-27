@@ -1,6 +1,6 @@
 # Enterprise Engineering Memory Agent
 
-[![ci](https://github.com/sampro14/enterprise_engineering_memory_agent/actions/workflows/ci.yml/badge.svg?branch=workbench)](https://github.com/sampro14/enterprise_engineering_memory_agent/actions/workflows/ci.yml)
+[![ci](https://github.com/sampro14/enterprise_engineering_memory_agent/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sampro14/enterprise_engineering_memory_agent/actions/workflows/ci.yml)
 [![Live demo](https://img.shields.io/badge/demo-try_in_browser-059669)](https://sampro14.github.io/enterprise_engineering_memory_agent/)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB)
 [![License: MIT](https://img.shields.io/badge/license-MIT-slategray)](LICENSE)

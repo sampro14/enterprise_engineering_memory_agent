@@ -1,7 +1,7 @@
 name: demo-site
 on:
   push:
-    branches: [workbench]
+    branches: [main]
     paths: ["demo/**", "src/memory_agent/ui/**", "Makefile", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
