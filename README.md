@@ -1,27 +1,38 @@
+<div align="center">
+
 # Enterprise Engineering Memory Agent
 
-[![ci](https://github.com/sampro14/enterprise_engineering_memory_agent/actions/workflows/ci.yml/badge.svg?branch=workbench)](https://github.com/sampro14/enterprise_engineering_memory_agent/actions/workflows/ci.yml)
+**Memory for AI agents that knows what's true now, what was true before, and what to distrust.**
+
+[![ci](https://github.com/sampro14/enterprise_engineering_memory_agent/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sampro14/enterprise_engineering_memory_agent/actions/workflows/ci.yml)
 [![Live demo](https://img.shields.io/badge/demo-try_in_browser-059669)](https://sampro14.github.io/enterprise_engineering_memory_agent/)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB)
 [![License: MIT](https://img.shields.io/badge/license-MIT-slategray)](LICENSE)
 
-Persistent, temporal, confidence-aware **organizational memory for AI agents**: it tracks *what is true now, what was
-true before, and what to distrust*, and learns lessons from repeated failures.
+**[▶ Try it in your browser](https://sampro14.github.io/enterprise_engineering_memory_agent/)** (no install, no API key) · [Results](#results) · [How it works](#architecture) · [Quickstart](#quickstart) · [Evaluation report](docs/POC_REPORT.md)
+
+<a href="https://sampro14.github.io/enterprise_engineering_memory_agent/"><img src="docs/assets/demo.gif" alt="The memory agent ingesting three documents, flagging a conflicting claim, and answering cleanly after review" width="820" /></a>
+
+</div>
+
+| **95%** overall accuracy | **100%** on current-fact questions | **14%** stale or poisoned answers |
+|:---:|:---:|:---:|
+| vector RAG 82% · all docs in context 93% | vector RAG 58% · all docs in context 100% | vector RAG 43% · all docs in context 16% |
+
+<sub>Synthetic benchmark with held-out seeds; same LLM, prompt and answer schema for every system. Full table and caveats in [Results](#results).</sub>
+
+## The problem
 
 Engineering facts change, and old documents don't announce that they're out of date. Vector search returns whatever text
-matches, so an agent can confidently repeat a decision that was reversed months ago. This system stores facts with validity
-dates, source authority and evidence, so an agent can tell which fact is current, what it replaced, and which claims are
-still unverified.
+matches, so an agent can confidently repeat a decision that was reversed months ago.
 
-**[Live demo](https://sampro14.github.io/enterprise_engineering_memory_agent/)** · [Design document](docs/DESIGN.md) ·
-[Evaluation report](docs/POC_REPORT.md)
+This system stores every fact with a validity window, its source's authority and its evidence. An agent can tell which fact
+is current, what it replaced, and which claims are still unverified, and it learns lessons from repeated failures.
 
-## Demo
+## See it work
 
-**[Try it in your browser](https://sampro14.github.io/enterprise_engineering_memory_agent/)**: no install or API key. The
-page runs the real UI and replays responses recorded from a real run, so only the recorded story and questions work there.
-
-![The memory agent ingesting three documents, flagging a conflicting claim, and answering cleanly after review](docs/assets/demo.gif)
+The [browser demo](https://sampro14.github.io/enterprise_engineering_memory_agent/) runs the real UI and replays responses recorded from a real run, so only the recorded story and
+questions work there.
 
 A service moves from Stripe to Razorpay, then a developer casually says it "still uses Stripe":
 
@@ -36,7 +47,7 @@ A service moves from Stripe to Razorpay, then a developer casually says it "stil
 |---|---|
 | ![Answer reporting that the current provider is disputed](docs/assets/conflict.png) | ![Answer stating that the current provider is Razorpay](docs/assets/resolved.png) |
 
-### Results
+## Results
 
 On a synthetic benchmark of about 60 documents and 147 questions per system (held-out seeds, same LLM and prompt for all):
 
@@ -46,7 +57,7 @@ On a synthetic benchmark of about 60 documents and 147 questions per system (hel
 | Current-fact accuracy | 58% | 100% | **100%** |
 | Stale or poisoned answers (lower is better) | 43% | 16% | **14%** |
 
-It clearly beats vector RAG, but the gap over putting every document in context is within noise at this size, and it uses
+**What the numbers don't show:** it clearly beats vector RAG, but the gap over putting every document in context is within noise at this size, and it uses
 3.2x the LLM calls of the baselines. Experience memory **lost** to simple conversation history on repeated mistakes (77% vs
 91% task success). The [PoC report](docs/POC_REPORT.md) has the details and the next experiment.
 
@@ -67,11 +78,16 @@ It clearly beats vector RAG, but the gap over putting every document in context 
 
 ## Architecture
 
-```
-client --HTTP--> FastAPI (API key -> tenant) --> MemoryService --> LangGraph flows --> store (Postgres+pgvector | SQLite)
-                     |                                 |                                          ^
-                     +-- POST /ingest --> jobs table --> worker (claims with SKIP LOCKED) ---------+
-providers: create_llm() / create_embedder()  ->  gemini | anthropic | openai | fake   (retries + cache applied once)
+```mermaid
+flowchart LR
+    C[Client] -->|HTTP + API key| API[FastAPI<br/>API key resolves the tenant]
+    API --> MS[MemoryService<br/>every operation, tenant-scoped]
+    MS --> LG[LangGraph flows<br/>ask · plan · execute · outcome]
+    LG --> ST[(Store<br/>Postgres + pgvector or SQLite)]
+    API -->|POST /ingest| JQ[(jobs table)]
+    JQ --> W[Worker<br/>claims jobs with SKIP LOCKED,<br/>retries with backoff]
+    W --> ST
+    LG -.-> PF[Provider factory<br/>Gemini · Anthropic · OpenAI · fake<br/>retries and cache applied once]
 ```
 
 ## Quickstart
@@ -113,7 +129,10 @@ uv run memory-agent timeline PaymentService
 
 Leave `DATABASE_URL` empty to use SQLite (`MEMORY_DB`); set it to use Postgres.
 
-## LLM providers (factory)
+## Reference
+
+<details>
+<summary><b>LLM providers</b></summary>
 
 `LLM_PROVIDER` and `EMBED_PROVIDER` are independent, so Claude can generate while Gemini or OpenAI embeds.
 
@@ -128,7 +147,10 @@ Add one by writing an adapter and `@register_llm("name")` in [llm/factory.py](sr
 on-disk response cache (`LLM_CACHE`) are applied by the factory, not by adapters. `EMBED_DIM` (default 3072) must match the
 vector column; changing it needs a new migration.
 
-## API (design section 26)
+</details>
+
+<details>
+<summary><b>API reference</b></summary>
 
 All `/api/v1` routes need `Authorization: Bearer <key>`; the tenant comes from the key, never from the body.
 
@@ -147,7 +169,10 @@ Errors are `{"error", "detail", "request_id"}` with 401/404/409/422 and 502/503 
 Deviations from the design's API: ingestion is one endpoint (`POST /ingest`) instead of `sources` + `run`; tasks are two-phase
 (plan, then report the outcome) because execution happens outside the memory service.
 
-## Layout
+</details>
+
+<details>
+<summary><b>Repository layout</b></summary>
 
 | Path | What |
 |---|---|
@@ -162,7 +187,10 @@ Deviations from the design's API: ingestion is one endpoint (`POST /ingest`) ins
 | `eval/`, `docs/POC_REPORT.md` | benchmarks and results |
 | `demo/`, `scripts/record_demo.py` | hosted recorded replay and the script that re-records it; `make demo-site` builds it |
 
-## Development
+</details>
+
+<details>
+<summary><b>Development and tests</b></summary>
 
 ```bash
 make test               # offline unit tests (SQLite + fake providers)
@@ -178,6 +206,8 @@ pgvector service container.
 Operational notes: writes are atomic per document (a failed job leaves nothing half-written); concurrent writers of one
 tenant are serialized with a Postgres advisory lock; jobs are retried with exponential backoff, and a job whose worker
 died is reclaimed after `JOB_VISIBILITY_TIMEOUT_SECONDS`. Containers run as a non-root user.
+
+</details>
 
 ## Evaluation
 
